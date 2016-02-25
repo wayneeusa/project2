@@ -150,16 +150,20 @@ public class Receiver {
         //       packets into your receiving queue such that you can test it once
         //       you get the first two processing done.
         SimplePacket temp = askForNextPacket();
+        int noOfPacketsNeeded = 0;
+        boolean boolReady = false;
         while (temp != null) {
             if (temp.isValidCheckSum() == false) {
                 askForRetransmit(temp);
             } else {
                 if (list.size() == 0) {
-                    list.add(temp);
+                    if(temp.isValidCheckSum()) {
+                    list.add(temp); }
                 } else if (temp.getSeq() < 0) {   //get sequence number and check for correct number of packets
+                    //because EOS packet was received
                     System.out.println("Got last packet");
-                    int noOfPacketsNeeded = (temp.getSeq() * -1);
-                    if (noOfPacketsNeeded != list.size()) {
+                       noOfPacketsNeeded = (temp.getSeq() * -1);
+                      if(noOfPacketsNeeded != list.size()) {      //// problem with using list.size() ?
                         System.out.println("no of packets not right");
 
                         for (int i = 1; i <= list.size(); i++) { //check if each packet is sequestial
@@ -168,6 +172,7 @@ public class Receiver {
                                 if (list.get(i).getSeq() == 1) {
                                     continue;
                                 } else {
+                                    System.out.println("Missing first packet");
                                     askForMissingPacket(1);
                                     SimplePacket missing = askForNextPacket();
 
@@ -225,7 +230,7 @@ public class Receiver {
                 temp = askForNextPacket();
             }
 
-            if (list.get(list.size()).getSeq() >= 0) {
+            if (list.get(list.size()).getSeq() >= 0) {  //Means the EOS packet was missing
 
                 boolean inQue = false;
                 while (!inQue) {
@@ -233,11 +238,17 @@ public class Receiver {
                 }
 
                 System.out.println("was missing EOS packet");
-                SimplePacket missing = askForNextPacket();
-                list.add(missing);
+                SimplePacket missing2 = askForNextPacket();
+
+                while( missing2.isValidCheckSum() == false || (missing2 == null)){
+                    askForRetransmit(missing2);
+                    missing2 = askForNextPacket();
+                }
+
+                list.add(missing2);
 
                 System.out.println("Got last packet");
-                int noOfPacketsNeeded = (missing.getSeq() * -1);
+                  noOfPacketsNeeded = (missing2.getSeq() * -1);
                 if (noOfPacketsNeeded != list.size()) {
                     System.out.println("no of packets not right");
 
@@ -248,41 +259,67 @@ public class Receiver {
                                 continue;
                             } else {
                                 askForMissingPacket(1);
-                                SimplePacket missing2 = askForNextPacket();
+                                SimplePacket missing = askForNextPacket();
 
-                                if (missing2.isValidCheckSum() == false) {
-                                    askForRetransmit(missing2);
+                                while(missing.isValidCheckSum() == false) {
+                                    askForRetransmit(missing);
+                                    missing = askForNextPacket(); //edited to fix corrupted packages
                                 }
 
 
-                                list.add(1, missing2);
+                                list.add(1, missing);
+
                             }
-                        } else {
+                        } else { //Where we check the sequence of packets for missing packets after the
+                            //case when the EOS packet was missing
                             System.out.println("preparing check to resend packets");
                             if (!(list.get(i).getSeq() == (list.get(i - 1).getSeq() + 1))) {
                                 System.out.println("Asking for packet retransmission");
-                                askForMissingPacket(i);
+
+                               // boolean boolReady = false;
+
+                                while(!boolReady) {
+                                    boolReady = askForMissingPacket(i); //Think it's getting hung here
+
+                                }
+                                boolReady = false;
                                 System.out.println("Got here");
-                                SimplePacket missing2 = askForNextPacket();
+                                SimplePacket missing = askForNextPacket();
 
-
-                                    while(missing2.isValidCheckSum() == false) {
-                                       if( askForRetransmit(missing2)){
-                                            missing2 = askForNextPacket(); //edited to fix corrupted packages
+                                while (missing.isValidCheckSum() == false) { //error here NullPointer
+                                    if(askForRetransmit(missing)){
+                                        missing = askForNextPacket();
+                                        if(missing.isValidCheckSum()){
+                                            break;
                                         }
+                                    }
+
+                              /*  System.out.println("Got here");
+
+                                boolean boolReady2 = false;
+                                while(!boolReady2){
+                                    boolReady2 = askForMissingPacket(i);
+
+                                }*/
+                             //   System.out.println("Right after boolReady statement");
+                             //   SimplePacket missing = askForNextPacket();
+
+                             /*   while (missing.isValidCheckSum() == false) {
+                                    if(askForRetransmit(missing)){
+                                        missing = askForNextPacket();*/
+                                    }
+
+                                list.add(i, missing);
                                 }
 
 
-                                list.add(i, missing2);
-
-
                             }
+                        //}
 
-                        }
                     }
+                    list.add(temp);
                 }
 
-                list.add(temp);
             }
 
 
@@ -294,7 +331,9 @@ public class Receiver {
             //       Packet" though this special packet could be lost while transmitting.
 
             //
-
+        //if(noOfPacketsNeeded != list.size()){
+          //  reconstructFile();
+        //}
         }
 
 

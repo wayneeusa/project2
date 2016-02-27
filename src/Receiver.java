@@ -151,7 +151,7 @@ public class Receiver {
         //       you get the first two processing done.
         SimplePacket temp = askForNextPacket();
         int noOfPacketsNeeded = 0;
-        boolean boolReady = false;
+        boolean EOSPacketWasMissing = false;
         while (temp != null) {
             if (temp.isValidCheckSum() == false) {
                 askForRetransmit(temp);
@@ -159,7 +159,7 @@ public class Receiver {
                 if (list.size() == 0) {
                     if(temp.isValidCheckSum()) {
                     list.add(temp); }
-                } else if (temp.getSeq() < 0) {   //get sequence number and check for correct number of packets
+                } else if (temp.getSeq() < 0) { //EOS recd-get sequence number and check for correct number of packets
                     //because EOS packet was received
                     System.out.println("Got last packet");
                        noOfPacketsNeeded = (temp.getSeq() * -1);
@@ -247,15 +247,23 @@ public class Receiver {
 
                 list.add(missing2);
 
+
+
+
+
+
+
                 System.out.println("Got last packet");
                   noOfPacketsNeeded = (missing2.getSeq() * -1);
+                System.out.println("EOS sequence is " + missing2.getSeq());
+                System.out.println("List.size() is " + list.size());
                 if (noOfPacketsNeeded != list.size()) {
                     System.out.println("no of packets not right");
 
                     for (int i = 1; i <= list.size(); i++) { //check if each packet is sequestial
                         //if not, ask for retransmit
                         if (i == 1) {
-                            if (list.get(i).getSeq() == 1) {
+                            if (list.get(i).getSeq() == 1) { //this block to handle first packet
                                 continue;
                             } else {
                                 askForMissingPacket(1);
@@ -276,15 +284,24 @@ public class Receiver {
                             if (!(list.get(i).getSeq() == (list.get(i - 1).getSeq() + 1))) {
                                 System.out.println("Asking for packet retransmission");
 
-                               // boolean boolReady = false;
 
-                                while(!boolReady) {
-                                    boolReady = askForMissingPacket(i); //Think it's getting hung here
 
-                                }
-                                boolReady = false;
-                                System.out.println("Got here");
+
+                                askForMissingPacket(i); //Think it's getting hung here
+
+                                System.out.println("Got here to ask for next packet");
                                 SimplePacket missing = askForNextPacket();
+
+                                while(missing == null || (missing.isValidCheckSum() == false)){
+
+                                    askForMissingPacket(i);
+                                    System.out.println(i);
+                                //    askForMissingPacket(i);
+
+                                    missing = askForNextPacket();
+                                    System.out.println("in while loop");
+                                }
+
 
                                 while (missing.isValidCheckSum() == false) { //error here NullPointer
                                     if(askForRetransmit(missing)){

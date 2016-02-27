@@ -36,3 +36,4 @@ public class BadImageContentException extends RuntimeException{
         super();
     }
 }
+//

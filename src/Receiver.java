@@ -1,3 +1,36 @@
+///////////////////////////////////////////////////////////////////////////////
+//                   ALL STUDENTS COMPLETE THESE SECTIONS
+// Title:            Program 2
+// Files:            Receiver.java, BadImageHeaderException.java,
+//					 PacketLinkedList.java, BadImageContentException.java.
+//					 PacketLinkedListIterator.java
+// Semester:         CS 367 Spring 2016
+//
+// Author:           Jonathan Santoso
+// Email:            jsantoso2@wisc.edu
+// CS Login:         santoso
+// Lecturer's Name:  Jim Skrentny
+// Lab Section:      (your lab section number)
+//
+//////////////////// PAIR PROGRAMMERS COMPLETE THIS SECTION ////////////////////
+//
+//                   CHECK ASSIGNMENT PAGE TO see IF PAIR-PROGRAMMING IS ALLOWED
+//                   If pair programming is allowed:
+//                   1. Read PAIR-PROGRAMMING policy (in cs302 policy)
+//                   2. choose a partner wisely
+//                   3. REGISTER THE TEAM BEFORE YOU WORK TOGETHER
+//                      a. one partner creates the team
+//                      b. the other partner must join the team
+//                   4. complete this section for each program file.
+//
+// Pair Partner:     Wayne Eternicka
+// Email:            wayne@badgers.me
+// CS Login:         eternicka
+// Lecturer's Name:  Deb Deppeler
+// Lab Section:      (your partner's lab section number)
+//
+//////////////////// STUDENTS WHO GET HELP FROM OTHER THAN THEIR PARTNER //////
+
 import java.io.IOException;
 import java.util.Collections;
 
@@ -26,6 +59,7 @@ public class Receiver {
         }
         img = new ImageDriver(input);
         // TODO: properly initialize your field
+        // initializes list to new PacketLinkedlist
         list = new PacketLinkedList<SimplePacket>();
     }
 
@@ -107,8 +141,10 @@ public class Receiver {
         System.out.println("try to display..");
         PacketLinkedListIterator <SimplePacket> DItr = list.iterator();
 
+        // Iterator to iterate through list
         while(DItr.hasNext()) {
             SimplePacket pack = DItr.next();
+            // if packet is not valid checksum, it is corrupted and print brackets
             if (!pack.isValidCheckSum()) {
                 System.out.print("[" + pack.getSeq() + "]");
             } else {
@@ -120,20 +156,6 @@ public class Receiver {
         }
         System.out.println();
     }
-    /*for (int i = 0; i < list.size(); i++){
-            if (list.get(i) == null){
-                continue;
-            }else{
-                if (list.get(i).isValidCheckSum() == false){
-                    System.out.print("[" + list.get(i).getSeq() + "] ,");
-                }else {
-                    System.out.print(list.get(i).getSeq() + ", ");
-                }
-            }
-        }
-        System.out.println();
-    }*/
-
     /**
      * Reconstructs the file by arranging the {@link PacketLinkedList} in
      * correct order. It uses {@link #askForNextPacket()} to get packets until
@@ -149,209 +171,112 @@ public class Receiver {
         //       first image file, "secret0.jpg", would not result in missing
         //       packets into your receiving queue such that you can test it once
         //       you get the first two processing done.
+
+        // TODO: Processing missing packets for the other four images. You should
+        //       utilize the information provided by "End of Streaming Notification
+        //       Packet" though this special packet could be lost while transmitting.
+
         SimplePacket temp = askForNextPacket();
         int noOfPacketsNeeded = 0;
-        boolean EOSPacketWasMissing = false;
+
+        // while askForNextPacket does not equal null, add to list
         while (temp != null) {
+
+            // if checksum is false, ask for retransmit
             if (temp.isValidCheckSum() == false) {
                 askForRetransmit(temp);
             } else {
-                if (list.size() == 0) {
-                    if(temp.isValidCheckSum()) {
-                    list.add(temp); }
-                } else if (temp.getSeq() < 0) { //EOS recd-get sequence number and check for correct number of packets
-                    //because EOS packet was received
-                    System.out.println("Got last packet");
-                       noOfPacketsNeeded = (temp.getSeq() * -1);
-                      if(noOfPacketsNeeded != list.size()) {      //// problem with using list.size() ?
-                        System.out.println("no of packets not right");
 
-                        for (int i = 1; i <= list.size(); i++) { //check if each packet is sequestial
-                            //if not, ask for retransmit
-                            if (i == 1) {
-                                if (list.get(i).getSeq() == 1) {
-                                    continue;
-                                } else {
-                                    System.out.println("Missing first packet");
-                                    askForMissingPacket(1);
-                                    SimplePacket missing = askForNextPacket();
+                // if list is empty, add first element at end
+                if (list.size() == 0 && temp.isValidCheckSum() == true) {
+                    list.add(temp);
 
-                                    while(missing.isValidCheckSum() == false) {
-                                        askForRetransmit(missing);
-                                        missing = askForNextPacket(); //edited to fix corrupted packages
-                                    }
-
-
-                                    list.add(1, missing);
-
-                                }
-                            } else {
-                                System.out.println("preparing check to resend packets");
-                                if (!(list.get(i).getSeq() == (list.get(i - 1).getSeq() + 1))) {
-                                    System.out.println("Asking for packet retransmission");
-                                    askForMissingPacket(i);
-                                    System.out.println("Got here");
-                                    SimplePacket missing = askForNextPacket();
-
-                                    while (missing.isValidCheckSum() == false) {
-                                        if(askForRetransmit(missing)){
-                                            missing = askForNextPacket();
-                                        }
-                                    }
-                                        list.add(i, missing);
-
-                                    }
-                                }
-
-                            }
-                            list.add(temp);
-                        }
-
-                    } else {
-                        int insert_pos = -1;
-                        for (int i = 1; i <= list.size(); i++) {
-                            if (temp.getSeq() < list.get(i).getSeq()) {
-                                list.add(i, temp);
-                                insert_pos = i;
-                                break;
-                            } else if (temp.getSeq() == list.get(i).getSeq()) {
-
-                                list.add(i, temp);
-                                list.remove(i + 1);
-                                insert_pos = i;
-                                break;
-                            }
-                        }
-                        if (insert_pos == -1) {
-                            list.add(temp);
-                        }
-                    }
-                }
-                temp = askForNextPacket();
-            }
-
-            if (list.get(list.size()).getSeq() >= 0) {  //Means the EOS packet was missing
-
-                boolean inQue = false;
-                while (!inQue) {
-                    inQue = askForMissingPacket(0);
-                }
-
-                System.out.println("was missing EOS packet");
-                SimplePacket missing2 = askForNextPacket();
-
-                while( missing2.isValidCheckSum() == false || (missing2 == null)){
-                    askForRetransmit(missing2);
-                    missing2 = askForNextPacket();
-                }
-
-                list.add(missing2);
-
-
-
-
-
-
-
-                System.out.println("Got last packet");
-                  noOfPacketsNeeded = (missing2.getSeq() * -1);
-                System.out.println("EOS sequence is " + missing2.getSeq());
-                System.out.println("List.size() is " + list.size());
-                if (noOfPacketsNeeded != list.size()) {
-                    System.out.println("no of packets not right");
-
-                    for (int i = 1; i <= list.size(); i++) { //check if each packet is sequestial
-                        //if not, ask for retransmit
-                        if (i == 1) {
-                            if (list.get(i).getSeq() == 1) { //this block to handle first packet
+                    // if sequence number is negative, check if all elements is complete
+                } else if (temp.getSeq() < 0) {
+                    // Last packet received here
+                    // numPackets needed is the negative packet times -1
+                    noOfPacketsNeeded = (temp.getSeq() * -1);
+                    if(noOfPacketsNeeded != list.size()) {
+                        // check if each packet is sequential
+                        for (int i = 0; i < list.size(); i++) {
+                            if (list.get(i).getSeq() == i+1){
                                 continue;
-                            } else {
-                                askForMissingPacket(1);
+                                // if not, ask for missing packet again
+                                // which will later arrive in queue
+                            } else{
+                                askForMissingPacket(i+1);
                                 SimplePacket missing = askForNextPacket();
-
-                                while(missing.isValidCheckSum() == false) {
-                                    askForRetransmit(missing);
-                                    missing = askForNextPacket(); //edited to fix corrupted packages
-                                }
-
-
-                                list.add(1, missing);
-
-                            }
-                        } else { //Where we check the sequence of packets for missing packets after the
-                            //case when the EOS packet was missing
-                            System.out.println("preparing check to resend packets");
-                            if (!(list.get(i).getSeq() == (list.get(i - 1).getSeq() + 1))) {
-                                System.out.println("Asking for packet retransmission");
-
-
-
-
-                                askForMissingPacket(i); //Think it's getting hung here
-
-                                System.out.println("Got here to ask for next packet");
-                                SimplePacket missing = askForNextPacket();
-
-                                while(missing == null || (missing.isValidCheckSum() == false)){
-
-                                    askForMissingPacket(i);
-                                    System.out.println(i);
-                                //    askForMissingPacket(i);
-
-                                    missing = askForNextPacket();
-                                    System.out.println("in while loop");
-                                }
-
-
-                                while (missing.isValidCheckSum() == false) { //error here NullPointer
+                                // continue askForNextPacket until it has a valid checksum
+                                while (missing.isValidCheckSum() == false){
                                     if(askForRetransmit(missing)){
                                         missing = askForNextPacket();
-                                        if(missing.isValidCheckSum()){
-                                            break;
-                                        }
                                     }
-
-                              /*  System.out.println("Got here");
-
-                                boolean boolReady2 = false;
-                                while(!boolReady2){
-                                    boolReady2 = askForMissingPacket(i);
-
-                                }*/
-                             //   System.out.println("Right after boolReady statement");
-                             //   SimplePacket missing = askForNextPacket();
-
-                             /*   while (missing.isValidCheckSum() == false) {
-                                    if(askForRetransmit(missing)){
-                                        missing = askForNextPacket();*/
-                                    }
-
-                                list.add(i, missing);
                                 }
-
-
+                                // add to buffer at correct index for missing packets
+                                list.add(i,missing);
                             }
-                        //}
-
+                        }
                     }
-                    list.add(temp);
+                } else {
+                    // insert_pos is the insertion position in list
+                    int insert_pos = -1;
+                    for (int i = 0; i < list.size(); i++) {
+                        // if next packet sequence number is smaller, add in the front
+                        if (temp.getSeq() < list.get(i).getSeq()) {
+                            list.add(i, temp);
+                            insert_pos = i;
+                            break;
+                            // if next packet sequence number is the same,
+                            // remove the old one and add the new one
+                        } else if (temp.getSeq() == list.get(i).getSeq()) {
+                            list.add(i, temp);
+                            list.remove(i + 1);
+                            insert_pos = i;
+                            break;
+                        }
+                    }
+                    // add at end if sequence number of next packet is larger than
+                    // everything in the list
+                    if (insert_pos == -1) {
+                        list.add(temp);
+                    }
                 }
-
             }
-
-
-            System.out.println("list size: " + list.size());
-            displayList();
-
-            // TODO: Processing missing packets for the other four images. You should
-            //       utilize the information provided by "End of Streaming Notification
-            //       Packet" though this special packet could be lost while transmitting.
-
-            //
-        //if(noOfPacketsNeeded != list.size()){
-          //  reconstructFile();
-        //}
+            // continue ask for next packet
+            temp = askForNextPacket();
         }
+
+        // if not received the EOS packet
+        if (list.size() != list.get(list.size()-1).getSeq()){
+            // check if it is sequential, and ask for missing packets and add at
+            // proper index
+            for (int i = 0; i < list.size(); i++){
+                if (list.get(i).getSeq() != i+1){
+                    askForMissingPacket(i+1);
+                    SimplePacket missing = askForNextPacket();
+                    while (missing.isValidCheckSum() == false){
+                        if(askForRetransmit(missing)){
+                            missing = askForNextPacket();
+                        }
+                    }
+                    list.add(i,missing);
+                }
+            }
+            // handles case for missing EOS packet because askForNextPacket is null
+            if (askForNextPacket() == null){
+                askForMissingPacket(0);
+                SimplePacket Eos = askForNextPacket();
+                // ask for EOS packet until it has valid checksum
+                while(Eos.isValidCheckSum() == false){
+                    askForMissingPacket(0);
+                    Eos = askForNextPacket();
+                }
+                // got EOS packet
+                if (Eos.getSeq() < 0){
+                }
+            }
+        }
+    }
 
 
     /**
@@ -366,21 +291,25 @@ public class Receiver {
 		/* throws BadImageHeaderException if the maintained list buffer has an
 		 * invalid image header, throws BadImageContentException if the
 		 * maintained list buffer has an invalid image content*/
-        catch (Exception e) {
-            System.out.println(
-                    "Please catch the proper Image-related Exception.");
-            e.printStackTrace();
-            // MAY be wrong?
+
+        // catch the broken image exception
+        catch (BrokenImageException e) {
+            // if validImageHeader is false, throw new exception
             if (validImageHeader() == false){
                 throw new BadImageHeaderException();
             }
+            // if validImageContent is false, throw new exception
             if (validImageContent() == false){
                 throw new BadImageContentException();
             }
+            System.out.println(
+                    "Please catch the proper Image-related Exception.");
+            e.printStackTrace();
         }
     }
 
-    private void check(){   //This is to test our PLinkedList and Iterator
+    //This is to test our PLinkedList and Iterator
+    private void check(){
         list.add(new SimplePacket(1, true, null));
         displayList();
     }
@@ -399,7 +328,6 @@ public class Receiver {
         Receiver recv = new Receiver(args[0]);
         recv.reconstructFile();
         //recv.displayList(); //use for debugging
-        //recv.check();
-        //recv.openImage();
+        recv.openImage();
     }
 }

@@ -1,3 +1,24 @@
+///////////////////////////////////////////////////////////////////////////////
+//                   ALL STUDENTS COMPLETE THESE SECTIONS
+// Main Class File:  Receiver.java
+// File:             PacketLinkedListIterator.java
+// Semester:         CS 367 Spring 2016
+//
+// Author:           Jonathan Santoso, jsantoso2@wisc.edu
+// CS Login:         santoso
+// Lecturer's Name:  Jim Skrentny
+// Lab Section:      (your lab section number)
+//
+//////////////////// PAIR PROGRAMMERS COMPLETE THIS SECTION ////////////////////
+//
+// Pair Partner:     Wayne Eternicka
+// Email:            wayne@badgers.me
+// CS Login:         eternicka
+// Lecturer's Name:  Deb Deppeler
+// Lab Section:      (your partner's lab section number)
+//
+//////////////////// STUDENTS WHO GET HELP FROM OTHER THAN THEIR PARTNER //////
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -7,8 +28,6 @@ import java.util.NoSuchElementException;
 public class PacketLinkedListIterator<T> implements Iterator<T> {
     // TODO: add field when needed
     private Listnode <T> listNode;
-    private int currPos;
-    private int numItems;
 
     /**
      * Constructs a PacketLinkedListIterator by passing a head node of
@@ -18,18 +37,8 @@ public class PacketLinkedListIterator<T> implements Iterator<T> {
      */
     public PacketLinkedListIterator(Listnode<T> head) {
         // TODO
-
-       listNode = head;
-
-       /* int count = 0;
-        list = head;
-        while (list.getNext() != null){
-            count++;
-            list = list.getNext();
-        }
-        list = head;
-        numItems = count;
-        currPos = 0;*/
+        // set listnode to head
+        listNode = head;
     }
 
     /**
@@ -41,21 +50,14 @@ public class PacketLinkedListIterator<T> implements Iterator<T> {
     public T next() {
         //TODO: replace the default return statment
 
-        if(listNode.getNext() == null)
+        // if next element in listnode is null, throw new exception
+        if(listNode.getNext() == null){
             throw new NoSuchElementException();
-
+        }
+        // return next element in iteration
         listNode = listNode.getNext();
         return listNode.getData();
 
-        /*if (currPos >= numItems){
-            throw new NoSuchElementException();
-        }
-        T result = null;
-        for (int i = 0; i < currPos; i++){
-            result = list.getNext().getData();
-        }
-        currPos ++;
-        return result;*/
     }
 
     /**
@@ -65,9 +67,8 @@ public class PacketLinkedListIterator<T> implements Iterator<T> {
     @Override
     public boolean hasNext() {
         //TODO: replace the default return statment
-
-       return listNode.getNext() != null;
-       // return currPos < numItems;
+        // return if iteration has more elements
+        return listNode.getNext() != null;
     }
 
     /**
